@@ -10,7 +10,7 @@ Kevin Wong
 UT EIDs:
 ========
 jec3875
--------
+es25725
 -------
 
 
@@ -63,8 +63,22 @@ APIs that we should think about using:
 	
 
 
+4) Flier 
+	- flier and handout distribution app that allows events, clubs, etc. to digitally distribute fliers 
+	- Fliers can be downloaded or saved for later viewing, or by default will be deleted after the event is over
 
 
+5) Location Based Alarm Clock
+	- Useful for train/bus rides where location is important
+	- Can let user sleep
 
+6) Smart Group Messenger
+	- Uses symbols to tag threads
+	- Keyword notifications
+	- Help reduce notification spam in group chats
+
+7) Tinder for Roommates
+	- Similar swipes to tinder
+	- Finds potential roommates in particular college or area
 
 
