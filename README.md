@@ -69,7 +69,7 @@ APIs that we should think about using:
 	- Fliers can be downloaded or saved for later viewing, or by default will be deleted after the event is over
 
 
-5) Location Based Alarm Clock
+5) Location Based Alarm Clock (favorite choice - James)
 	- Useful for train/bus rides where location is important
 	- Can let user sleep
 
