@@ -14,6 +14,7 @@ import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
+import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.PopupMenu;
@@ -37,6 +38,7 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import android.Manifest;
 
 import java.io.IOException;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -51,6 +53,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private LocationRequest mLocationRequest;
     private Location mLastLocation;
     private Marker mCurrLocationMarker;
+    private List<Address> addressList;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -73,16 +76,14 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         EditText location_tf = (EditText)findViewById(R.id.TFaddress);
         String location = location_tf.getText().toString();
 
-        List<Address> addressList = null;
-
         if(location != null || !location.equals("")){
             Geocoder geocoder = new Geocoder(this);
             userIndex = 0;
             try {
-                addressList = geocoder.getFromLocationName(location, 5);
+                addressList = geocoder.getFromLocationName(location, 5, 25, -125, 50, -74);
                 addresses = new String[addressList.size()];
                 for(int i=0; i<addressList.size(); i++){
-                    addresses[i] = addressList.get(i).getAddressLine(0);
+                    addresses[i] = addressList.get(i).getAddressLine(0) + " " + addressList.get(i).getAddressLine(1);
                 }
             } catch (Exception e) {
                 Toast.makeText(this, "Location does not exist.", Toast.LENGTH_LONG).show();
@@ -99,40 +100,50 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
                         userIndex = which;
-                        Toast.makeText(MapsActivity.this, "Selected value " + which, Toast.LENGTH_LONG).show();
+
+                        Address address = addressList.get(userIndex);
+                        LatLng latLng = new LatLng(address.getLatitude(), address.getLongitude());
+
+                        mMap.addMarker(new MarkerOptions().position(latLng).title("Marker"));
+                        mMap.animateCamera(CameraUpdateFactory.newLatLng(latLng));
+                        LatLng current = mCurrLocationMarker.getPosition();
+                        float[] distance = new float[1];
+                        Location.distanceBetween(current.latitude, current.longitude, latLng.latitude, latLng.longitude, distance);
+                        Toast.makeText(MapsActivity.this, "Distance: " + Math.floor(distance[0]*0.000621*100)/100 + " miles", Toast.LENGTH_LONG).show();
                     }
                 });
                 AlertDialog alertDialog = alertDialogBuilder.create();
                 alertDialog.show();
-
-                Address address = addressList.get(userIndex);
-                //LatLng latLng = new LatLng(address.getLatitude(), address.getLongitude());
-
-                //mMap.addMarker(new MarkerOptions().position(latLng).title("Marker"));
-                //mMap.animateCamera(CameraUpdateFactory.newLatLng(latLng));
             }
         }
     }
-        
-    public void onSearch(View view){
-        EditText location_tf = (EditText)findViewById(R.id.TFaddress);
-        String location = location_tf.getText().toString();
 
-        List<Address> addressList = null;
+    public double CalculationByDistance(LatLng StartP, LatLng EndP) {
+        int Radius = 6371;// radius of earth in Km
+        double lat1 = StartP.latitude;
+        double lat2 = EndP.latitude;
+        double lon1 = StartP.longitude;
+        double lon2 = EndP.longitude;
+        double dLat = Math.toRadians(lat2 - lat1);
+        double dLon = Math.toRadians(lon2 - lon1);
+        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
+                + Math.cos(Math.toRadians(lat1))
+                * Math.cos(Math.toRadians(lat2)) * Math.sin(dLon / 2)
+                * Math.sin(dLon / 2);
+        double c = 2 * Math.asin(Math.sqrt(a));
+        double valueResult = Radius * c;
+        double km = valueResult / 1;
+        DecimalFormat newFormat = new DecimalFormat("####");
+        int kmInDec = Integer.valueOf(newFormat.format(km));
+        double meter = valueResult % 1000;
+        int meterInDec = Integer.valueOf(newFormat.format(meter));
+        Log.i("Radius Value", "" + valueResult + "   KM  " + kmInDec
+                + " Meter   " + meterInDec);
 
-        if(location != null || !location.equals("")){
-            Geocoder geocoder = new Geocoder(this);
-            try {
-                addressList = geocoder.getFromLocationName(location, 1);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-
-            Address address = addressList.get(0);
-            LatLng latLng = new LatLng(address.getLatitude(), address.getLongitude());
-
-            mMap.addMarker(new MarkerOptions().position(latLng).title("Marker"));
-            mMap.animateCamera(CameraUpdateFactory.newLatLng(latLng));
+        if((Radius * c) < 0.3){
+            return (Radius*c);
+        } else {
+            return (Radius * c) - 0.2;
         }
     }
 
