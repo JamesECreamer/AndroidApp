@@ -1,3 +1,5 @@
+**NOTE: Only 1 main contributor due to pair programming using one team member's computer.**
+
 Semester Project - Android App
 ==============================
 
