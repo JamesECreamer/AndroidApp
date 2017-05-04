@@ -1,10 +1,12 @@
 package com.example.googlemapstest;
 
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.pm.PackageManager;
 import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
+import android.location.LocationManager;
 import android.media.MediaPlayer;
 import android.os.Build;
 import android.support.annotation.NonNull;
@@ -18,6 +20,8 @@ import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.PopupMenu;
+import android.widget.PopupWindow;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
@@ -41,6 +45,7 @@ import java.io.IOException;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback,
         GoogleApiClient.ConnectionCallbacks,
@@ -54,6 +59,14 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private Location mLastLocation;
     private Marker mCurrLocationMarker;
     private List<Address> addressList;
+    private float[] mDistance;
+    //private ArrayList<LatLng> markers = new ArrayList<LatLng>();
+    //private ArrayList<String> addressStore = new ArrayList<String>();
+    private LatLng markers;
+    private String addressStore;
+    private static MediaPlayer mp;
+    private boolean youHere = false;
+    private boolean first = true;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -67,9 +80,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
-        //mMap.setMyLocationEnabled(true);
-        //MediaPlayer mp = MediaPlayer.create(getApplicationContext(), R.raw.shape_of_you);
-        //mp.start();
+        //addressStore = new ArrayList<String>();
+        //markers = new ArrayList<LatLng>();
+        addressStore = null;
+        markers = null;
     }
 
     public void onSearch(View view){
@@ -103,12 +117,21 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
                         Address address = addressList.get(userIndex);
                         LatLng latLng = new LatLng(address.getLatitude(), address.getLongitude());
+                        //markers.add(latLng);
+                        //addressStore.add(addressList.get(userIndex).getAddressLine(0).toString() + addressList.get(userIndex).getAddressLine(1).toString());
+                        if(markers != null) {
+                            mMap.clear();
+                        }
+                        markers = latLng;
+                        addressStore = addressList.get(userIndex).getAddressLine(0).toString() + addressList.get(userIndex).getAddressLine(1).toString();
 
-                        mMap.addMarker(new MarkerOptions().position(latLng).title("Marker"));
+                        //mMap.addMarker(new MarkerOptions().position(latLng).title(addressStore.get(addressStore.size()-1)));
+                        mMap.addMarker(new MarkerOptions().position(latLng).title(addressStore));
                         mMap.animateCamera(CameraUpdateFactory.newLatLng(latLng));
                         LatLng current = mCurrLocationMarker.getPosition();
                         float[] distance = new float[1];
                         Location.distanceBetween(current.latitude, current.longitude, latLng.latitude, latLng.longitude, distance);
+                        mDistance = distance;
                         Toast.makeText(MapsActivity.this, "Distance: " + Math.floor(distance[0]*0.000621*100)/100 + " miles", Toast.LENGTH_LONG).show();
                     }
                 });
@@ -178,7 +201,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
         // Add a marker in Sydney and move the camera
         LatLng sydney = new LatLng(30.3142, -97.7329);
-        mMap.addMarker(new MarkerOptions().position(sydney).title("Marker in Sydney"));
+        //mMap.addMarker(new MarkerOptions().position(sydney).title("Marker in Sydney"));
         mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));
     }
 
@@ -295,13 +318,53 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mCurrLocationMarker = mMap.addMarker(markerOptions);
 
         //move map camera
-        mMap.moveCamera(CameraUpdateFactory.newLatLng(latLng));
-        mMap.animateCamera(CameraUpdateFactory.zoomTo(11));
+        if(first) {
+            mMap.moveCamera(CameraUpdateFactory.newLatLng(latLng));
+            mMap.animateCamera(CameraUpdateFactory.zoomTo(11));
+            first = false;
+        }
 
         //stop location updates
         if (mGoogleApiClient != null) {
-            LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient, this);
+            //LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient, this);
         }
+        //for(LatLng i : markers) {
+            //if (i != null) {
+            if(markers != null){
+                Location.distanceBetween(location.getLatitude(), location.getLongitude(), markers.latitude, markers.longitude, mDistance);
+                Toast.makeText(MapsActivity.this, "Distance: " + Math.floor(mDistance[0] * 0.000621 * 100) / 100 + " miles", Toast.LENGTH_LONG).show();
+                if (0.5 >= Math.floor(mDistance[0] * 0.000621 * 100) / 100) {
+                    mMap.setMyLocationEnabled(true);
+                    if (mp == null) {
+                        if(youHere == false) {
+                            mp = MediaPlayer.create(getApplicationContext(), R.raw.shape_of_you);
+                            mp.start();
+                            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+                            //builder.setMessage("You are close to " + addressStore.get(markers.indexOf(i)))
+                            builder.setMessage("You are close to " + addressStore)
+                                    .setCancelable(false)
+                                    .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                                        public void onClick(DialogInterface dialog, int id) {
+                                            if(mp != null) {
+                                                mp.stop();
+                                                mp = null;
+                                            }
+                                        }
+                                    });
+                            AlertDialog alert = builder.create();
+                            alert.show();
+                            youHere = true;
+                        }
+                    }
+                }
+                if(1 < Math.floor(mDistance[0] * 0.000621 * 100) / 100){
+                    youHere = false;
+                }
+            } else {
+                //Toast.makeText(MapsActivity.this, "null", Toast.LENGTH_LONG).show();
+            }
+        //}
+
     }
 
     private boolean checkGooglePlayServices() {

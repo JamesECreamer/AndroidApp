@@ -10,15 +10,15 @@
 
         <EditText
             android:id="@+id/TFaddress"
-            android:layout_width="260dp"
+            android:layout_width="236dp"
             android:layout_height="56dp"
             android:ems="10"
             android:inputType="textPersonName"
-            android:text="Address" />
+            android:hint="Enter an Address"/>
 
         <Button
             android:id="@+id/Bsearch"
-            android:layout_width="133dp"
+            android:layout_width="123dp"
             android:layout_height="wrap_content"
             android:onClick="onSearch"
             android:text="Search" />
